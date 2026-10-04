@@ -803,3 +803,126 @@ button { -webkit-tap-highlight-color: transparent; }
   .sidebar-user { margin-left: -2px; margin-right: -2px; }
   .notification-dropdown { width: calc(100vw - 28px); }
 }
+
+/* =====================================================
+   TEXT / SMS CHECKER
+   ===================================================== */
+
+.checker-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(330px, .85fr);
+  gap: 18px;
+  align-items: stretch;
+}
+
+.checker-panel,
+.checker-result { min-height: 520px; }
+
+.checker-tabs {
+  display: flex;
+  gap: 6px;
+  padding: 14px 16px 0;
+  border-bottom: 1px solid #edf0f4;
+}
+
+.checker-tab {
+  min-height: 38px;
+  padding: 0 13px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: #7b8798;
+  font-size: 10px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.checker-tab svg { width: 15px; height: 15px; }
+.checker-tab:hover { color: #315efb; }
+.checker-tab.active { color: #315efb; border-bottom-color: #315efb; }
+
+.checker-form { padding: 22px; }
+.checker-form label { display: block; margin-bottom: 9px; color: #344054; font-size: 10px; font-weight: 750; }
+.checker-form textarea {
+  width: 100%;
+  min-height: 285px;
+  resize: vertical;
+  padding: 14px;
+  border: 1px solid #dfe5ed;
+  border-radius: 11px;
+  outline: none;
+  background: #fbfcfe;
+  color: #172033;
+  font-size: 11px;
+  line-height: 1.7;
+  transition: .2s ease;
+}
+.checker-form textarea::placeholder { color: #a5afbd; }
+.checker-form textarea:focus { border-color: #7c9aff; background: #fff; box-shadow: 0 0 0 3px rgba(49,94,251,.08); }
+
+.checker-form-footer { margin-top: 10px; display: flex; align-items: center; justify-content: space-between; gap: 10px; color: #98a2b3; font-size: 9px; }
+.checker-actions { display: flex; gap: 7px; }
+.checker-clear,
+.checker-submit { min-height: 35px; padding: 0 13px; border-radius: 8px; font-size: 9px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
+.checker-clear { color: #667085; background: #fff; border: 1px solid #e1e6ed; }
+.checker-clear:hover { background: #f8fafc; }
+.checker-submit { color: #fff; background: #315efb; border: 1px solid #315efb; box-shadow: 0 5px 14px rgba(49,94,251,.18); }
+.checker-submit:hover { background: #2449d8; transform: translateY(-1px); }
+.checker-submit:disabled, .checker-clear:disabled { opacity: .6; cursor: not-allowed; transform: none; }
+.checker-submit svg { width: 14px; height: 14px; }
+.checker-spinner { width: 11px; height: 11px; }
+
+.checker-error { margin-top: 12px; padding: 10px 11px; display: flex; gap: 8px; align-items: center; border: 1px solid #fecdd3; border-radius: 8px; color: #be123c; background: #fff1f2; font-size: 9px; line-height: 1.5; }
+.checker-error svg { width: 14px; height: 14px; flex: 0 0 auto; }
+
+.checker-empty { min-height: 425px; padding: 35px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; color: #98a2b3; }
+.checker-empty-icon { width: 58px; height: 58px; margin-bottom: 15px; display: grid; place-items: center; border-radius: 15px; color: #315efb; background: #eef3ff; }
+.checker-empty-icon svg { width: 27px; height: 27px; }
+.checker-empty strong { color: #344054; font-size: 13px; }
+.checker-empty span { max-width: 280px; margin-top: 8px; font-size: 9px; line-height: 1.7; }
+.checker-empty b { color: #667085; }
+
+.checker-result-body { padding: 18px; }
+.checker-score { padding: 17px; display: flex; align-items: center; justify-content: space-between; gap: 14px; border-radius: 13px; }
+.checker-score > div:first-child span { display: block; font-size: 8px; font-weight: 800; letter-spacing: .8px; }
+.checker-score > div:first-child strong { display: block; margin-top: 3px; font-size: 31px; letter-spacing: -1px; }
+.checker-score.risk-critical, .checker-score.risk-high { color: #c81e1e; background: #fff1f2; }
+.checker-score.risk-medium { color: #b45309; background: #fffbeb; }
+.checker-score.risk-low { color: #15803d; background: #ecfdf3; }
+.checker-severity { text-align: right; }
+.checker-severity small { display: block; font-size: 7px; opacity: .7; font-weight: 800; letter-spacing: .7px; }
+.checker-severity b { display: block; margin-top: 4px; font-size: 11px; }
+.checker-progress { height: 6px; margin: 14px 1px 20px; overflow: hidden; border-radius: 99px; background: #edf0f4; }
+.checker-progress span { display: block; height: 100%; border-radius: inherit; background: currentColor; }
+.checker-score.risk-critical + .checker-progress,
+.checker-score.risk-high + .checker-progress { color: #ef4444; }
+.checker-score.risk-medium + .checker-progress { color: #f59e0b; }
+.checker-score.risk-low + .checker-progress { color: #22c55e; }
+
+.checker-section { margin-top: 17px; padding-top: 16px; border-top: 1px solid #edf0f4; }
+.checker-section-title { display: flex; align-items: center; gap: 7px; color: #344054; font-size: 9px; font-weight: 800; }
+.checker-section-title svg { width: 14px; height: 14px; color: #667085; }
+.checker-reasons { margin-top: 10px; display: grid; gap: 7px; }
+.checker-reason { padding: 8px 9px; display: flex; align-items: center; gap: 8px; border: 1px solid #edf0f4; border-radius: 8px; background: #fafbfc; color: #667085; font-size: 9px; line-height: 1.4; }
+.checker-reason svg { width: 13px; height: 13px; flex: 0 0 auto; color: #16a34a; }
+.checker-no-reasons { margin-top: 10px; color: #98a2b3; font-size: 9px; }
+.checker-urls { margin-top: 9px; display: grid; gap: 6px; }
+.checker-urls div { overflow-wrap: anywhere; padding: 8px 9px; border: 1px solid #edf0f4; border-radius: 7px; background: #fafbfc; color: #315efb; font-size: 8.5px; }
+
+@media (max-width: 1000px) {
+  .checker-layout { grid-template-columns: 1fr; }
+  .checker-panel, .checker-result { min-height: auto; }
+}
+
+@media (max-width: 620px) {
+  .checker-tabs { padding-left: 12px; padding-right: 12px; }
+  .checker-form { padding: 14px; }
+  .checker-form textarea { min-height: 230px; }
+  .checker-form-footer { align-items: flex-start; flex-direction: column; }
+  .checker-actions { width: 100%; }
+  .checker-clear, .checker-submit { flex: 1; }
+  .checker-result-body { padding: 13px; }
+}

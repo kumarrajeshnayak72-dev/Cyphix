@@ -1,0 +1,244 @@
+/* =============================================
+   CYBERGUARD DASHBOARD
+   ============================================= */
+
+.dashboard {
+  min-height: 100vh;
+  padding: 30px;
+  background: #f5f7fb;
+  color: #172033;
+}
+
+
+/* =============================================
+   DASHBOARD HEADER
+   ============================================= */
+
+.dashboard-header {
+  margin-bottom: 30px;
+}
+
+.dashboard-header h1 {
+  margin: 0;
+  font-size: 30px;
+  font-weight: 700;
+}
+
+.dashboard-header p {
+  margin-top: 8px;
+  color: #667085;
+  font-size: 15px;
+}
+
+
+/* =============================================
+   STATISTICS GRID
+   ============================================= */
+
+.stats-grid {
+  display: grid;
+  grid-template-columns:
+    repeat(4, minmax(0, 1fr));
+
+  gap: 20px;
+  margin-bottom: 30px;
+}
+
+
+/* =============================================
+   STAT CARD
+   ============================================= */
+
+.stat-card {
+  background: #ffffff;
+  border: 1px solid #e6eaf0;
+  border-radius: 14px;
+  padding: 22px;
+
+  box-shadow:
+    0 4px 14px
+    rgba(16, 24, 40, 0.05);
+
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.stat-card:hover {
+  transform: translateY(-2px);
+
+  box-shadow:
+    0 8px 20px
+    rgba(16, 24, 40, 0.08);
+}
+
+
+/* =============================================
+   CARD TOP
+   ============================================= */
+
+.stat-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+
+/* =============================================
+   CARD TITLE
+   ============================================= */
+
+.stat-card-title {
+  margin: 0;
+
+  font-size: 14px;
+  font-weight: 500;
+
+  color: #667085;
+}
+
+
+/* =============================================
+   CARD VALUE
+   ============================================= */
+
+.stat-card-value {
+  margin: 8px 0 0;
+
+  font-size: 32px;
+  font-weight: 700;
+
+  color: #172033;
+}
+
+
+/* =============================================
+   CARD ICON
+   ============================================= */
+
+.stat-card-icon {
+  width: 48px;
+  height: 48px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 12px;
+
+  background: #eef2ff;
+
+  font-size: 22px;
+}
+
+
+/* =============================================
+   CARD DESCRIPTION
+   ============================================= */
+
+.stat-card-description {
+  margin: 14px 0 0;
+
+  font-size: 12px;
+
+  color: #98a2b3;
+}
+
+
+/* =============================================
+   RESPONSIVE
+   ============================================= */
+
+@media (max-width: 1000px) {
+
+  .stats-grid {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+  }
+
+}
+
+
+@media (max-width: 600px) {
+
+  .dashboard {
+    padding: 20px;
+  }
+
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .dashboard-header h1 {
+    font-size: 25px;
+  }
+
+}
+
+.dashboard-error {
+  margin-bottom: 20px;
+  padding: 14px 16px;
+
+  border-radius: 10px;
+
+  background: #fff1f2;
+  border: 1px solid #fecdd3;
+
+  color: #be123c;
+
+  font-size: 14px;
+}
+
+
+.dashboard-status {
+  display: flex;
+
+  align-items: center;
+  justify-content: space-between;
+
+  padding: 18px 20px;
+
+  background: #ffffff;
+
+  border: 1px solid #e6eaf0;
+
+  border-radius: 14px;
+
+  box-shadow:
+    0 4px 14px
+    rgba(16, 24, 40, 0.05);
+}
+
+
+.status-dot {
+  margin-right: 8px;
+
+  color: #16a34a;
+
+  font-size: 14px;
+}
+
+
+.refresh-button {
+  border: none;
+
+  padding: 9px 16px;
+
+  border-radius: 8px;
+
+  background: #172033;
+
+  color: #ffffff;
+
+  cursor: pointer;
+
+  font-size: 13px;
+
+  transition:
+    opacity 0.2s ease;
+}
+
+
+.refresh-button:hover {
+  opacity: 0.85;
+}

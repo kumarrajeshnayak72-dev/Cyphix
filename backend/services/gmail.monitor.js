@@ -39,7 +39,7 @@ function startGmailMonitor() {
   monitorGmail();
 
   // Check every 60 seconds
-  setInterval(monitorGmail, 60 * 1000);
+  setInterval(monitorGmail, 30 * 1000);
 }
 
 module.exports = {

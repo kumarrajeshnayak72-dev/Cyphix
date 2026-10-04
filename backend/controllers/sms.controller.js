@@ -1,6 +1,6 @@
-const detectText = require("../services/detector");
+const detectText = require("../services/detection/detector");
 
-const checkSms = (req, res) => {
+const checkSms = async (req, res) => {
   try {
     const { text } = req.body;
 
@@ -11,7 +11,7 @@ const checkSms = (req, res) => {
       });
     }
 
-    const analysis = detectText(text);
+    const analysis = await detectText(text);
 
     res.json({
       success: true,

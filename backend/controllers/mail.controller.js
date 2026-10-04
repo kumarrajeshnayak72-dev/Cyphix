@@ -1,7 +1,7 @@
-const detectText = require("../services/detector");
+const detectText = require("../services/detection/detector");
 const decideMailDelivery = require("../services/mail.gateway");
 
-const verifyMail = (req, res) => {
+const verifyMail = async (req, res) => {
   const { sender, subject, body } = req.body;
 
   if (!sender || !subject || !body) {
@@ -11,77 +11,113 @@ const verifyMail = (req, res) => {
     });
   }
 
-  let score = 0;
-  const reasons = [];
+  try {
+    // Combine sender, subject and body so the ML model
+    // and detection rules can analyze the complete email.
+    const combinedText = `
+From: ${sender}
 
-  // Sender analysis
-  const senderLower = sender.toLowerCase();
+Subject: ${subject}
 
-  if (!senderLower.includes("@")) {
-    score += 20;
-    reasons.push("Invalid sender email format");
+${body}
+`;
+
+    const analysis = await detectText(combinedText);
+
+    // Additional sender analysis
+    const senderLower = sender.toLowerCase();
+
+    const senderSignals = [];
+
+    if (!senderLower.includes("@")) {
+      senderSignals.push({
+        score: 20,
+        reason: "Invalid sender email format",
+      });
+    }
+
+    const freeEmailDomains = [
+      "gmail.com",
+      "yahoo.com",
+      "outlook.com",
+      "hotmail.com",
+    ];
+
+    const domain = senderLower.split("@")[1];
+
+    if (domain && freeEmailDomains.includes(domain)) {
+      senderSignals.push({
+        score: 5,
+        reason: "Sender uses a free email provider",
+      });
+    }
+
+    // Add sender risk to the detector score
+    const senderScore = senderSignals.reduce(
+      (total, signal) => total + signal.score,
+      0
+    );
+
+    const finalScore = Math.min(
+      analysis.score + senderScore,
+      100
+    );
+
+    // Delivery decision
+    const delivery = decideMailDelivery(finalScore);
+
+    const reasons = [
+      ...new Set([
+        ...analysis.reasons,
+        ...senderSignals.map(
+          (signal) => signal.reason
+        ),
+      ]),
+    ];
+
+    let status;
+
+    if (finalScore >= 70) {
+      status = "malicious";
+    } else if (finalScore >= 30) {
+      status = "suspicious";
+    } else {
+      status = "safe";
+    }
+
+    res.json({
+      success: true,
+
+      sender,
+      subject,
+
+      status,
+      severity: analysis.severity,
+      score: finalScore,
+
+      action: delivery.action,
+      deliver: delivery.deliver,
+
+      reasons,
+
+      urls: analysis.urls,
+
+      ml: analysis.ml,
+
+      userMessage: delivery.message,
+    });
+
+  } catch (error) {
+    console.error(
+      "Email analysis failed:",
+      error.message
+    );
+
+    res.status(500).json({
+      success: false,
+      message: "Failed to analyze email",
+    });
   }
-
-  const freeEmailDomains = [
-    "gmail.com",
-    "yahoo.com",
-    "outlook.com",
-    "hotmail.com",
-  ];
-
-  const domain = senderLower.split("@")[1];
-
-  if (domain && freeEmailDomains.includes(domain)) {
-    score += 5;
-    reasons.push("Sender uses a free email provider");
-  }
-
-  // Subject analysis
-  const subjectResult = detectText(subject);
-
-  score += subjectResult.score;
-  reasons.push(...subjectResult.reasons);
-
-  // Body analysis
-  const bodyResult = detectText(body);
-
-  score += bodyResult.score;
-  reasons.push(...bodyResult.reasons);
-
-  score = Math.min(score, 100);
-
-  let status;
-
-  if (score >= 70) {
-    status = "malicious";
-  } else if (score >= 30) {
-    status = "suspicious";
-  } else {
-    status = "safe";
-  }
-
-  // Delivery decision
-  const delivery = decideMailDelivery(score);
-
-  res.json({
-    success: true,
-
-    sender,
-    subject,
-
-    status,
-    score,
-
-    action: delivery.action,
-    deliver: delivery.deliver,
-
-    // Only show reasons to CyberGuard/admin.
-    reasons,
-
-    urls: bodyResult.urls,
-
-    userMessage: delivery.message,
-  });
 };
 
 module.exports = {

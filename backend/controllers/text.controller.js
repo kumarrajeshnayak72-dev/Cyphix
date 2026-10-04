@@ -1,6 +1,6 @@
-const detectText = require("../services/detector");
+const detectText = require("../services/detection/detector");
 
-const verifyText = (req, res) => {
+const verifyText = async (req, res) => {
   const { text } = req.body;
 
   if (!text || !text.trim()) {
@@ -10,16 +10,24 @@ const verifyText = (req, res) => {
     });
   }
 
-  const result = detectText(text);
+  try {
+    const result = await detectText(text);
 
-  res.json({
-    success: true,
-    input: text,
-    ...result,
-  });
+    res.json({
+      success: true,
+      input: text,
+      ...result,
+    });
+  } catch (error) {
+    console.error("Text detection error:", error);
+
+    res.status(500).json({
+      success: false,
+      message: "Unable to analyze text",
+    });
+  }
 };
 
 module.exports = {
   verifyText,
 };
-

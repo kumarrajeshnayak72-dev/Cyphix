@@ -2,13 +2,16 @@ const { SMTPServer } = require("smtp-server");
 const { simpleParser } = require("mailparser");
 const nodemailer = require("nodemailer");
 
-const detectText = require("./detector");
+const detectText = require("./detection/detector");
 
 const { quarantineMail } = require("./quarantine");
 
 const decideMailDelivery = require("./mail.gateway");
 
-const createSecurityNotification = require("./notification");
+const {
+  sendSecurityNotification,
+} = require("./notification");
+
 
 // ==========================================
 // GMAIL SMTP TRANSPORTER
@@ -25,194 +28,341 @@ const deliveryTransporter = nodemailer.createTransport({
   },
 });
 
+
 // ==========================================
 // CYBERGUARD SMTP SERVER
 // ==========================================
 
 const server = new SMTPServer({
-  // Authentication is disabled for our
-  // local development/testing server.
+
+  // Local development/testing server
   authOptional: true,
 
-  // ------------------------------------------
+
+  // ========================================
   // RECEIVE EMAIL
-  // ------------------------------------------
+  // ========================================
 
   onData(stream, session, callback) {
+
     simpleParser(stream)
+
       .then(async (mail) => {
-        // ======================================
+
+        // ==================================
         // EXTRACT EMAIL INFORMATION
-        // ======================================
+        // ==================================
 
-        const sender = mail.from?.text || "";
+        const sender =
+          mail.from?.text || "";
 
-        const recipient = mail.to?.text || "";
+        const recipient =
+          mail.to?.text || "";
 
-        const subject = mail.subject || "";
+        const subject =
+          mail.subject || "";
 
-        const body = mail.text || "";
+        const body =
+          mail.text || "";
+
 
         console.log("\n");
         console.log("=================================");
-        console.log("📩 CYBERGUARD INCOMING EMAIL");
+        console.log("?? CYBERGUARD INCOMING EMAIL");
         console.log("=================================");
 
         console.log("From:", sender);
         console.log("To:", recipient);
         console.log("Subject:", subject);
 
-        // ======================================
-        // ANALYZE SUBJECT
-        // ======================================
 
-        const subjectResult = detectText(subject);
+        // ==================================
+        // COMBINE EMAIL FOR DETECTION
+        // ==================================
 
-        // ======================================
-        // ANALYZE EMAIL BODY
-        // ======================================
+        const combinedText = `
+From: ${sender}
 
-        const bodyResult = detectText(body);
+Subject: ${subject}
 
-        // ======================================
-        // CALCULATE RISK
-        // ======================================
+${body}
+`;
 
-        let score = subjectResult.score + bodyResult.score;
 
-        score = Math.min(score, 100);
+        // ==================================
+        // RUN MODULAR DETECTION
+        // ==================================
 
-        // ======================================
-        // COLLECT REASONS
-        // ======================================
+        const analysis =
+          await detectText(combinedText);
 
-        const reasons = [...subjectResult.reasons, ...bodyResult.reasons];
 
-        // ======================================
-        // COLLECT URLS
-        // ======================================
-
-        const urls = [
-          ...new Set([
-            ...(subjectResult.urls || []),
-            ...(bodyResult.urls || []),
-          ]),
-        ];
-
-        const analysis = {
-          score,
-          reasons,
-          urls,
-        };
-
-        // ======================================
+        // ==================================
         // DELIVERY DECISION
-        // ======================================
+        // ==================================
 
-        const delivery = decideMailDelivery(score);
-
-        console.log("---------------------------------");
-        console.log("Risk Score:", score);
-        console.log("Action:", delivery.action);
-        console.log("---------------------------------");
-
-        // ======================================
-        // BLOCK / QUARANTINE
-        // ======================================
-
-        if (delivery.action === "BLOCK") {
-          const quarantined =await quarantineMail(
-            {
-              sender,
-              recipient,
-              subject,
-              body,
-            },
-            analysis,
+        const delivery =
+          decideMailDelivery(
+            analysis.score
           );
 
-          console.log("🚨 EMAIL BLOCKED");
-          console.log("Quarantine ID:", quarantined.id);
 
-          // User-facing notification.
-          // Do NOT expose detailed detection
-          // information to the recipient.
+        console.log("---------------------------------");
+        console.log(
+          "Risk Score:",
+          analysis.score
+        );
+
+        console.log(
+          "Severity:",
+          analysis.severity
+        );
+
+        console.log(
+          "Status:",
+          analysis.status
+        );
+
+        console.log(
+          "ML:",
+          analysis.ml?.label || "N/A"
+        );
+
+        console.log(
+          "Action:",
+          delivery.action
+        );
+
+        console.log("---------------------------------");
+
+
+        // ==================================
+        // BLOCK / QUARANTINE
+        // ==================================
+
+        if (delivery.action === "BLOCK") {
+
+          let quarantined;
 
           try {
-            await createSecurityNotification(
+
+            quarantined =
+              await quarantineMail(
+                {
+                  messageId:
+                    mail.messageId ||
+                    `smtp-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`,
+
+                  sender,
+
+                  recipient,
+
+                  subject,
+
+                  body,
+                },
+
+                analysis
+              );
+
+
+            console.log(
+              "?? EMAIL BLOCKED"
+            );
+
+            console.log(
+              "Quarantine ID:",
+              quarantined.quarantineId
+            );
+
+
+          } catch (error) {
+
+            console.error(
+              "? Failed to quarantine email:"
+            );
+
+            console.error(
+              error.message
+            );
+
+            return callback(
+              new Error(
+                "Email quarantine failed"
+              )
+            );
+          }
+
+
+          // =================================
+          // SECURITY NOTIFICATION
+          // =================================
+
+          try {
+
+            await sendSecurityNotification(
               {
                 sender,
                 recipient,
                 subject,
               },
-              analysis,
+
+              analysis
             );
 
-            console.log("🔔 Security alert sent to:", recipient);
-          } catch (error) {
-            console.error("❌ Security alert failed:");
 
-            console.error(error.message);
+            console.log(
+              "?? Security alert sent."
+            );
+
+
+          } catch (error) {
+
+            console.error(
+              "? Security notification failed:"
+            );
+
+            console.error(
+              error.message
+            );
           }
 
-          console.log("📦 Email stored in quarantine");
 
-          callback();
-          return;
+          // =================================
+          // DO NOT DELIVER BLOCKED EMAIL
+          // =================================
+
+          return callback(
+            new Error(
+              "Email blocked by CyberGuard"
+            )
+          );
         }
 
-        // ======================================
-        // SAFE EMAIL → FORWARD
-        // ======================================
 
-        console.log("✅ EMAIL APPROVED FOR DELIVERY");
+        // ==================================
+        // ALLOW EMAIL
+        // ==================================
+
+        if (delivery.action === "ALLOW") {
+
+          console.log(
+            "? EMAIL ALLOWED"
+          );
+
+
+          try {
+
+            await deliveryTransporter.sendMail({
+              from: sender,
+              to: recipient,
+              subject,
+              text: body,
+            });
+
+
+            console.log(
+              "?? Email delivered successfully."
+            );
+
+
+          } catch (error) {
+
+            console.error(
+              "? Email delivery failed:"
+            );
+
+            console.error(
+              error.message
+            );
+
+            return callback(error);
+          }
+
+
+          return callback();
+        }
+
+
+        // ==================================
+        // WARN / OTHER ACTION
+        // ==================================
+
+        console.log(
+          "?? Email passed with warning."
+        );
+
 
         try {
+
           await deliveryTransporter.sendMail({
-            from: process.env.SMTP_USER,
-
+            from: sender,
             to: recipient,
-
-            subject: subject,
-
+            subject,
             text: body,
           });
 
-          console.log("📨 Email forwarded successfully");
 
-          console.log("📬 Delivered to:", recipient);
+          console.log(
+            "?? Email delivered with warning."
+          );
 
-          callback();
+
+          return callback();
+
+
         } catch (error) {
-          console.error("❌ Email forwarding failed:");
 
-          console.error(error.message);
+          console.error(
+            "? Email delivery failed:"
+          );
 
-          callback(error);
+          console.error(
+            error.message
+          );
+
+          return callback(error);
         }
+
       })
 
       .catch((error) => {
-        console.error("❌ Email processing error:");
 
-        console.error(error.message);
+        console.error(
+          "? Email parsing failed:"
+        );
+
+        console.error(
+          error.message
+        );
 
         callback(error);
       });
   },
 });
 
+
 // ==========================================
 // START SMTP SERVER
 // ==========================================
 
-server.listen(2525, () => {
-  console.log("");
-  console.log("=================================");
-  console.log("🛡️ CYBERGUARD MAIL GATEWAY");
-  console.log("=================================");
-  console.log("SMTP Server: localhost:2525");
-  console.log("Status: ONLINE");
-  console.log("=================================");
-  console.log("");
-});
+server.listen(
+  2525,
+  "localhost",
+  () => {
+
+    console.log("");
+    console.log("=================================");
+    console.log("??? CYBERGUARD MAIL GATEWAY");
+    console.log("=================================");
+    console.log("SMTP Server: localhost:2525");
+    console.log("Status: ONLINE");
+    console.log("=================================");
+    console.log("");
+  }
+);
+
+
+module.exports = server;
+
+
