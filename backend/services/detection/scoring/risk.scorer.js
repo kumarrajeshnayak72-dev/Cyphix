@@ -1,8 +1,65 @@
 function calculateRiskScore(signals = []) {
-  const score = signals.reduce(
-    (total, signal) => total + Number(signal.score || 0),
-    0,
+  if (!Array.isArray(signals) || signals.length === 0) {
+    return 0;
+  }
+
+  let positiveScore = 0;
+  let negativeScore = 0;
+
+  const positiveSources = new Set();
+
+  for (const signal of signals) {
+    const value = Number(signal.score || 0);
+
+    if (value > 0) {
+      positiveScore += value;
+
+      if (signal.source) {
+        positiveSources.add(signal.source);
+      }
+    } else if (value < 0) {
+      negativeScore += Math.abs(value);
+    }
+  }
+
+  // =============================================
+  // CAP POSITIVE EVIDENCE
+  // =============================================
+
+  positiveScore = Math.min(positiveScore, 100);
+
+  // =============================================
+  // APPLY TRUST / BENIGN CONTEXT
+  // =============================================
+
+  const finalScore = Math.max(0, positiveScore - negativeScore);
+
+  // =============================================
+  // ML-ONLY PROTECTION
+  // =============================================
+
+  const hasML = signals.some(
+    (signal) => signal.source === "ml" && Number(signal.score || 0) > 0,
   );
+
+  const hasNonMLPositiveSignal = signals.some(
+    (signal) => signal.source !== "ml" && Number(signal.score || 0) > 0,
+  );
+
+  let score = finalScore;
+
+  // ML alone can never quarantine.
+  if (hasML && !hasNonMLPositiveSignal) {
+    score = Math.min(score, 29);
+  }
+
+  // =============================================
+  // REQUIRE MULTIPLE SOURCES FOR QUARANTINE
+  // =============================================
+
+  if (score >= 70 && positiveSources.size < 2) {
+    score = 69;
+  }
 
   return Math.min(Math.round(score), 100);
 }
@@ -49,7 +106,10 @@ function getRecommendedAction(score) {
 
 module.exports = {
   calculateRiskScore,
+
   getSeverity,
+
   getStatus,
+
   getRecommendedAction,
 };

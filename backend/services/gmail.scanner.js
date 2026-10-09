@@ -116,8 +116,10 @@ ${body}
       // RUN DETECTION
       // =========================================
 
-      const analysis =
-        await detectText(combinedText);
+      const analysis = await detectText(combinedText, {
+        sender,
+        subject,
+      });
 
       let action = "NONE";
 

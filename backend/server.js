@@ -22,6 +22,8 @@ const notificationRoutes = require("./routes/notification.routes");
 
 const smsRoutes = require("./routes/sms.routes");
 
+const multimediaRoutes = require("./routes/multimedia.routes");
+
 const app = express();
 
 // =====================================
@@ -101,6 +103,8 @@ app.use("/api/gmail", gmailRoutes);
 app.use("/api/notifications", notificationRoutes);
 
 app.use("/api/sms", smsRoutes);
+
+app.use("/api/multimedia", multimediaRoutes);
 
 // =====================================
 // SERVER
